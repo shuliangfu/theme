@@ -1,0 +1,43 @@
+{
+  "name": "@dreamer/theme",
+  "version": "1.0.0-beta.1",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "imports": {
+    "@dreamer/test": "jsr:@dreamer/test@^1.0.0-beta.40"
+  },
+  "exclude": [
+    ".github",
+    "*.md",
+    "meta.json",
+    ".gitignore",
+    ".cursorignore"
+  ],
+  "publish": {
+    "exclude": [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/test/**",
+      "**/tests/**"
+    ]
+  },
+  "tasks": {
+    "test": "deno test --allow-all tests/",
+    "check": "deno check src/mod.ts",
+    "publish": "deno publish"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "dom.asynciterable",
+      "deno.ns",
+      "deno.window"
+    ]
+  }
+}
