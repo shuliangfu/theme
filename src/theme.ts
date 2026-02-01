@@ -48,6 +48,12 @@ export class Theme implements ThemeInstance {
   /** 媒体查询变化处理器 */
   private mediaQueryHandler: ((e: MediaQueryListEvent) => void) | null = null;
 
+  /** DOM 元素缓存 - 避免重复查询 */
+  private cachedElement: Element | null = null;
+
+  /** 自定义过渡 CSS 样式元素 */
+  private transitionStyleElement: HTMLStyleElement | null = null;
+
   /**
    * 创建主题实例
    *
@@ -67,6 +73,8 @@ export class Theme implements ThemeInstance {
       cookieExpireDays: options.cookieExpireDays ?? 365,
       disableTransition: options.disableTransition ?? false,
       transitionDuration: options.transitionDuration ?? 200,
+      transitionCSS: options.transitionCSS ?? "",
+      persistTransitionCSS: options.persistTransitionCSS ?? false,
     };
 
     // 初始化主题
@@ -75,8 +83,15 @@ export class Theme implements ThemeInstance {
 
     // 在浏览器环境中应用主题
     if (typeof globalThis.document !== "undefined") {
+      // 缓存 DOM 元素
+      this.cacheElement();
       this.applyTheme(false);
       this.setupSystemPreferenceListener();
+
+      // 如果配置了持久化过渡 CSS，则立即注入
+      if (this.options.transitionCSS && this.options.persistTransitionCSS) {
+        this.injectTransitionCSS();
+      }
     }
   }
 
@@ -170,6 +185,12 @@ export class Theme implements ThemeInstance {
     // 清理回调
     this.callbacks.clear();
 
+    // 清理 DOM 缓存
+    this.cachedElement = null;
+
+    // 移除过渡 CSS
+    this.removeTransitionCSS();
+
     // 清理全局实例
     if (globalThemeInstance === this) {
       globalThemeInstance = null;
@@ -242,17 +263,80 @@ export class Theme implements ThemeInstance {
   }
 
   /**
+   * 缓存 DOM 元素
+   * 避免每次应用主题时重复查询 DOM
+   */
+  private cacheElement(): void {
+    this.cachedElement = globalThis.document?.querySelector(
+      this.options.selector,
+    ) ?? null;
+  }
+
+  /**
+   * 获取目标元素（优先使用缓存）
+   *
+   * @returns 目标元素或 null
+   */
+  private getElement(): Element | null {
+    // 如果缓存存在且元素仍在 DOM 中，直接返回
+    if (this.cachedElement && this.cachedElement.isConnected) {
+      return this.cachedElement;
+    }
+    // 否则重新查询并缓存
+    this.cacheElement();
+    return this.cachedElement;
+  }
+
+  /**
+   * 注入自定义过渡 CSS
+   */
+  private injectTransitionCSS(): void {
+    if (!this.options.transitionCSS) return;
+    if (typeof globalThis.document === "undefined") return;
+
+    // 如果已存在，先移除
+    this.removeTransitionCSS();
+
+    // 创建并注入样式元素
+    this.transitionStyleElement = globalThis.document.createElement("style");
+    this.transitionStyleElement.setAttribute("data-theme-transition", "true");
+    this.transitionStyleElement.textContent = this.options.transitionCSS;
+    globalThis.document.head?.appendChild(this.transitionStyleElement);
+  }
+
+  /**
+   * 移除自定义过渡 CSS
+   */
+  private removeTransitionCSS(): void {
+    if (this.transitionStyleElement) {
+      this.transitionStyleElement.remove();
+      this.transitionStyleElement = null;
+    }
+  }
+
+  /**
    * 应用主题到 DOM
    *
    * @param animate - 是否启用动画
    */
   private applyTheme(animate: boolean): void {
-    const element = globalThis.document?.querySelector(this.options.selector);
+    const element = this.getElement();
     if (!element) return;
 
-    // 禁用过渡动画（如果需要）
+    // 处理过渡动画
     if (animate && !this.options.disableTransition) {
-      this.disableTransitionTemporarily(element as HTMLElement);
+      if (this.options.transitionCSS && !this.options.persistTransitionCSS) {
+        // 使用自定义过渡 CSS（临时注入）
+        this.injectTransitionCSS();
+        // 切换完成后移除
+        setTimeout(() => {
+          this.removeTransitionCSS();
+        }, this.options.transitionDuration);
+      } else if (!this.options.transitionCSS) {
+        // 使用默认行为：临时禁用过渡
+        this.disableTransitionTemporarily(element as HTMLElement);
+      }
+      // 如果 persistTransitionCSS 为 true，过渡 CSS 已在构造函数中注入，无需额外处理
     }
 
     // 根据策略应用主题
@@ -296,10 +380,11 @@ export class Theme implements ThemeInstance {
 
   /**
    * 临时禁用过渡动画
+   * 注意：当前实现使用全局 CSS 禁用所有过渡，element 参数预留供未来扩展
    *
-   * @param element - 目标元素
+   * @param _element - 目标元素（当前未使用，预留参数）
    */
-  private disableTransitionTemporarily(element: HTMLElement): void {
+  private disableTransitionTemporarily(_element: HTMLElement): void {
     // 添加无过渡样式
     const css = globalThis.document?.createElement("style");
     if (!css) return;
@@ -397,7 +482,8 @@ export class Theme implements ThemeInstance {
   private setCookie(name: string, value: string, days: number): void {
     if (typeof globalThis.document === "undefined") return;
     const maxAge = days * 24 * 60 * 60;
-    globalThis.document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
+    globalThis.document.cookie =
+      `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
   }
 }
 

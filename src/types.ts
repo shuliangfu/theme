@@ -92,6 +92,30 @@ export interface ThemeOptions {
    * @default 200
    */
   transitionDuration?: number;
+
+  /**
+   * 自定义过渡动画 CSS
+   * 在主题切换时注入，用于定义过渡效果
+   *
+   * @example
+   * ```typescript
+   * transitionCSS: `
+   *   html {
+   *     transition: background-color 0.3s ease, color 0.3s ease;
+   *   }
+   *   .theme-transition {
+   *     transition: all 0.3s ease;
+   *   }
+   * `
+   * ```
+   */
+  transitionCSS?: string;
+
+  /**
+   * 是否持久化过渡 CSS（切换完成后保留）
+   * @default false
+   */
+  persistTransitionCSS?: boolean;
 }
 
 /**

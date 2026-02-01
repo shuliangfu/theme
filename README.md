@@ -4,7 +4,7 @@
 
 [![JSR](https://jsr.io/badges/@dreamer/theme)](https://jsr.io/@dreamer/theme)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
-[![Tests](https://img.shields.io/badge/tests-30%20passed-green)](TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-36%20passed-green)](TEST_REPORT.md)
 
 ---
 
@@ -64,6 +64,8 @@ npx jsr add @dreamer/theme
 - **其他特性**
   - 系统偏好自动跟随
   - 切换动画控制
+  - 自定义过渡 CSS
+  - DOM 查询缓存（性能优化）
   - 全局单例模式
   - 完整 TypeScript 类型
 
@@ -100,28 +102,49 @@ theme.setMode("system");
 
 ### TailwindCSS 配置
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  darkMode: "class",
-};
-```
-
+**TailwindCSS v4**（无需额外配置）：
 ```typescript
-// 使用默认配置即可
+// v4 默认支持 class 策略，直接使用即可
 const theme = createTheme();
 ```
 
+**TailwindCSS v3**（需要配置）：
+```javascript
+// tailwind.config.js
+module.exports = {
+  darkMode: "class", // v3 默认是 "media"，需要手动设置为 "class"
+};
+```
+
 ### UnoCSS 配置
+
+**UnoCSS 默认使用 media 策略**，如需 class 策略需配置：
 
 ```typescript
 // uno.config.ts
 import { defineConfig, presetUno } from "unocss";
 
 export default defineConfig({
-  presets: [presetUno({ dark: "class" })],
+  presets: [presetUno({ dark: "class" })], // 默认是 "media"
 });
 ```
+
+**如果使用默认 media 策略**，库配置应改为：
+```typescript
+const theme = createTheme({
+  strategy: "media", // 匹配框架默认行为
+});
+```
+
+### 策略对照表
+
+| 框架 | 版本 | 默认策略 | 需要配置 |
+|------|------|----------|----------|
+| TailwindCSS | v4 | class | ❌ 无需配置 |
+| TailwindCSS | v3 | media | ✅ 需设置 `darkMode: "class"` |
+| UnoCSS | - | media | ✅ 需设置 `dark: "class"` |
+
+> **提示**：如果框架使用 `media` 策略（跟随系统），库的 `strategy` 也应设为 `"media"`，此时库仅用于获取/存储用户偏好，实际主题由 CSS 媒体查询控制。
 
 ---
 
@@ -167,6 +190,33 @@ globalThis.addEventListener(THEME_CHANGE_EVENT, (event) => {
 });
 ```
 
+### 自定义过渡动画
+
+```typescript
+// 临时过渡 CSS（切换时注入，切换完成后移除）
+const theme = createTheme({
+  transitionCSS: `
+    html {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .card, .button {
+      transition: all 0.3s ease;
+    }
+  `,
+  transitionDuration: 300, // 过渡持续时间
+});
+
+// 持久化过渡 CSS（始终保留在页面中）
+const theme = createTheme({
+  transitionCSS: `
+    * {
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+  `,
+  persistTransitionCSS: true, // 始终保留
+});
+```
+
 ### 防止闪烁
 
 在 `<head>` 中添加内联脚本：
@@ -176,8 +226,8 @@ globalThis.addEventListener(THEME_CHANGE_EVENT, (event) => {
   (function() {
     const stored = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = stored === "dark" || stored === "light" 
-      ? stored 
+    const theme = stored === "dark" || stored === "light"
+      ? stored
       : (prefersDark ? "dark" : "light");
     document.documentElement.classList.toggle("dark", theme === "dark");
   })();
@@ -205,6 +255,8 @@ globalThis.addEventListener(THEME_CHANGE_EVENT, (event) => {
 | cookieExpireDays | `number` | `365` | Cookie 过期天数 |
 | disableTransition | `boolean` | `false` | 禁用切换动画 |
 | transitionDuration | `number` | `200` | 动画时长 (ms) |
+| transitionCSS | `string` | `""` | 自定义过渡 CSS |
+| persistTransitionCSS | `boolean` | `false` | 持久化过渡 CSS |
 
 ### ThemeInstance 方法
 
@@ -247,9 +299,9 @@ import type {
 
 | 指标 | 数值 |
 |------|------|
-| 测试时间 | 2026-01-30 |
-| 总测试数 | 30 |
-| 通过 | 30 |
+| 测试时间 | 2026-02-01 |
+| 总测试数 | 36 |
+| 通过 | 36 |
 | 失败 | 0 |
 | 通过率 | 100% |
 

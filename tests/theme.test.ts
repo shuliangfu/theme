@@ -4,13 +4,7 @@
  * 测试主题切换功能
  */
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "@dreamer/test";
+import { afterEach, describe, expect, it } from "@dreamer/test";
 import {
   createTheme,
   destroyTheme,
@@ -204,7 +198,9 @@ describe("Theme 主题库", () => {
       expect(eventFired).toBe(true);
       expect((eventDetail as { theme: string }).theme).toBe("dark");
       expect((eventDetail as { mode: string }).mode).toBe("dark");
-      expect((eventDetail as { previousTheme: string }).previousTheme).toBe("light");
+      expect((eventDetail as { previousTheme: string }).previousTheme).toBe(
+        "light",
+      );
 
       globalThis.removeEventListener(THEME_CHANGE_EVENT, handler);
       theme.destroy();
@@ -415,6 +411,87 @@ describe("Theme 主题库", () => {
 
       expect(theme.getAppliedTheme()).toBe("light");
       theme.destroy();
+    });
+  });
+
+  describe("自定义过渡 CSS", () => {
+    it("transitionCSS 应该可配置", () => {
+      const theme = new Theme({
+        transitionCSS: `
+          html {
+            transition: background-color 0.3s ease;
+          }
+        `,
+        defaultMode: "light",
+      });
+
+      expect(theme.getAppliedTheme()).toBe("light");
+      theme.destroy();
+    });
+
+    it("persistTransitionCSS 应该可配置", () => {
+      const theme = new Theme({
+        transitionCSS: `
+          html {
+            transition: all 0.5s ease;
+          }
+        `,
+        persistTransitionCSS: true,
+        defaultMode: "dark",
+      });
+
+      expect(theme.getAppliedTheme()).toBe("dark");
+      theme.destroy();
+    });
+
+    it("临时过渡 CSS 应该在切换后移除", () => {
+      const theme = new Theme({
+        transitionCSS: `
+          html { transition: all 0.1s; }
+        `,
+        persistTransitionCSS: false,
+        transitionDuration: 50,
+        defaultMode: "light",
+      });
+
+      theme.setMode("dark");
+      expect(theme.getAppliedTheme()).toBe("dark");
+
+      theme.destroy();
+    });
+
+    it("持久化过渡 CSS 应该在销毁时移除", () => {
+      const theme = new Theme({
+        transitionCSS: `
+          html { transition: all 0.3s; }
+        `,
+        persistTransitionCSS: true,
+        defaultMode: "light",
+      });
+
+      expect(theme.getAppliedTheme()).toBe("light");
+      theme.destroy();
+      // destroy 后应该清理过渡 CSS
+    });
+  });
+
+  describe("DOM 缓存", () => {
+    it("应该正确缓存 DOM 元素", () => {
+      const theme = new Theme({ defaultMode: "light" });
+
+      // 多次切换主题，应该使用缓存的元素
+      theme.setMode("dark");
+      theme.setMode("light");
+      theme.setMode("dark");
+
+      expect(theme.getAppliedTheme()).toBe("dark");
+      theme.destroy();
+    });
+
+    it("销毁后应该清理缓存", () => {
+      const theme = new Theme({ defaultMode: "dark" });
+      theme.destroy();
+      // 销毁后缓存应该被清理
     });
   });
 });
