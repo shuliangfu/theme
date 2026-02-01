@@ -262,7 +262,8 @@ describe("Theme 主题库", () => {
     });
 
     it("destroyTheme 应该销毁全局实例", () => {
-      const theme1 = getTheme({ defaultMode: "light" });
+      // 创建全局实例
+      getTheme({ defaultMode: "light" });
       destroyTheme();
 
       // 销毁后再次获取应该是新实例
