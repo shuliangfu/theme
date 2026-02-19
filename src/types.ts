@@ -148,7 +148,9 @@ export interface ThemeInstance {
    * @param callback - 回调函数
    * @returns 取消监听函数
    */
-  onChange(callback: (theme: "light" | "dark", mode: ThemeMode) => void): () => void;
+  onChange(
+    callback: (theme: "light" | "dark", mode: ThemeMode) => void,
+  ): () => void;
 
   /**
    * 获取系统偏好主题

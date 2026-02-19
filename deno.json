@@ -1,6 +1,6 @@
 {
   "name": "@dreamer/theme",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0",
   "exports": {
     ".": "./src/mod.ts"
   },
@@ -18,8 +18,9 @@
     "publish": "deno publish"
   },
   "imports": {
-    "@dreamer/test": "jsr:@dreamer/test@^1.0.0-beta.40"
+    "@dreamer/test": "jsr:@dreamer/test@^1.0.11"
   },
+  "nodeModulesDir": "auto",
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,
