@@ -34,10 +34,19 @@ export interface ThemeOptions {
    * 暗黑模式策略
    * - class: 使用 CSS class（TailwindCSS/UnoCSS 默认）
    * - attribute: 使用 HTML 属性
-   * - media: 使用 CSS media query
+   * - media: 使用 CSS media query（亮/暗仍由 CSS 决定，见 `mediaSyncAttribute`）
    * @default "class"
    */
   strategy?: DarkModeStrategy;
+
+  /**
+   * 仅在 strategy="media" 时生效：在 `selector` 根节点写入解析后的 `"light"` | `"dark"`，
+   * 便于脚本读取（与 `prefers-color-scheme` 视觉一致）。
+   * - 默认 `"data-applied-theme"`（仅当 strategy 为 `media` 时启用；显式传 `""` 可关闭）
+   * - class / attribute 策略下不会写入该属性
+   * @default （strategy 为 media 时为 `"data-applied-theme"`，否则 `""`）
+   */
+  mediaSyncAttribute?: string;
 
   /**
    * 暗黑模式 class 名称（strategy="class" 时使用）

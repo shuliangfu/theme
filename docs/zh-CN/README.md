@@ -2,12 +2,12 @@
 
 轻量级主题切换包，专为 TailwindCSS 和 UnoCSS 设计。
 
-**English**: [README (full)](../../README.md) · **Test report (EN)**:
-[en-US/TEST_REPORT.md](../en-US/TEST_REPORT.md)
+**English**: [README (full)](../../README.md) ·
+**测试报告**：[中文](./TEST_REPORT.md) · [English](../en-US/TEST_REPORT.md)
 
 [![JSR](https://jsr.io/badges/@dreamer/theme)](https://jsr.io/@dreamer/theme)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../../LICENSE)
-[![Tests](https://img.shields.io/badge/tests-36%20passed-green)](./TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-47%20passed-green)](./TEST_REPORT.md)
 
 ---
 
@@ -55,7 +55,8 @@ npx jsr add @dreamer/theme
 - **切换策略**
   - class 策略（TailwindCSS/UnoCSS 默认）
   - attribute 策略（自定义属性）
-  - media 策略（纯 CSS 媒体查询）
+  - media 策略（CSS 媒体查询；可通过 `mediaSyncAttribute` 在根节点同步
+    `light`/`dark` 供脚本读取）
 
 - **持久化存储**
   - localStorage（默认）
@@ -66,8 +67,9 @@ npx jsr add @dreamer/theme
   - CustomEvent 事件派发
 
 - **其他特性**
+  - Cookie 写入 URL 编码、读取对称解码
   - 系统偏好自动跟随
-  - 切换动画控制
+  - 切换动画控制（临时禁用过渡时复用单个 `<style>` 节点）
   - 自定义过渡 CSS
   - DOM 查询缓存（性能优化）
   - 全局单例模式
@@ -251,21 +253,22 @@ const theme = createTheme({
 
 创建主题实例。
 
-| 参数                 | 类型                                | 默认值           | 说明             |
-| -------------------- | ----------------------------------- | ---------------- | ---------------- |
-| defaultMode          | `"light" \| "dark" \| "system"`     | `"system"`       | 默认模式         |
-| strategy             | `"class" \| "attribute" \| "media"` | `"class"`        | 切换策略         |
-| darkClass            | `string`                            | `"dark"`         | 深色模式 class   |
-| lightClass           | `string`                            | `""`             | 浅色模式 class   |
-| attribute            | `string`                            | `"data-theme"`   | HTML 属性名      |
-| selector             | `string`                            | `"html"`         | 应用主题的选择器 |
-| storageKey           | `string`                            | `"theme"`        | 存储键名         |
-| storageType          | `"localStorage" \| "cookie"`        | `"localStorage"` | 存储类型         |
-| cookieExpireDays     | `number`                            | `365`            | Cookie 过期天数  |
-| disableTransition    | `boolean`                           | `false`          | 禁用切换动画     |
-| transitionDuration   | `number`                            | `200`            | 动画时长 (ms)    |
-| transitionCSS        | `string`                            | `""`             | 自定义过渡 CSS   |
-| persistTransitionCSS | `boolean`                           | `false`          | 持久化过渡 CSS   |
+| 参数                 | 类型                                | 默认值                                                         | 说明                                                  |
+| -------------------- | ----------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| defaultMode          | `"light" \| "dark" \| "system"`     | `"system"`                                                     | 默认模式                                              |
+| strategy             | `"class" \| "attribute" \| "media"` | `"class"`                                                      | 切换策略                                              |
+| mediaSyncAttribute   | `string`                            | `strategy` 为 `media` 时默认 `"data-applied-theme"`，否则 `""` | 仅在 media 策略下向根节点写入解析后的亮/暗；`""` 关闭 |
+| darkClass            | `string`                            | `"dark"`                                                       | 深色模式 class                                        |
+| lightClass           | `string`                            | `""`                                                           | 浅色模式 class                                        |
+| attribute            | `string`                            | `"data-theme"`                                                 | HTML 属性名                                           |
+| selector             | `string`                            | `"html"`                                                       | 应用主题的选择器                                      |
+| storageKey           | `string`                            | `"theme"`                                                      | 存储键名                                              |
+| storageType          | `"localStorage" \| "cookie"`        | `"localStorage"`                                               | 存储类型                                              |
+| cookieExpireDays     | `number`                            | `365`                                                          | Cookie 过期天数                                       |
+| disableTransition    | `boolean`                           | `false`                                                        | 禁用切换动画                                          |
+| transitionDuration   | `number`                            | `200`                                                          | 动画时长 (ms)                                         |
+| transitionCSS        | `string`                            | `""`                                                           | 自定义过渡 CSS                                        |
+| persistTransitionCSS | `boolean`                           | `false`                                                        | 持久化过渡 CSS                                        |
 
 ### ThemeInstance 方法
 
@@ -306,26 +309,42 @@ import type {
 
 ## 📊 测试报告
 
-| 指标     | 数值       |
-| -------- | ---------- |
-| 测试时间 | 2026-02-01 |
-| 总测试数 | 36         |
-| 通过     | 36         |
-| 失败     | 0          |
-| 通过率   | 100%       |
+| 指标     | 数值                        |
+| -------- | --------------------------- |
+| 测试时间 | 2026-03-22                  |
+| 总测试数 | 47（`deno test -A tests/`） |
+| 通过     | 47                          |
+| 失败     | 0                           |
+| 通过率   | 100%                        |
 
-详细测试报告请查看 [TEST_REPORT.md](TEST_REPORT.md)
+- **完整套件（Deno）**：`deno test -A tests/` — 37
+  条单元（`tests/theme.test.ts`）+ 浏览器文件内 10
+  条注册（`tests/browser/theme-browser.test.ts`，真实 Chromium）。
+- **仅浏览器**：`deno task test:browser`。
+- **Bun**：`bun test tests/`（见
+  `package.json`；不同运行器对钩子计数可能略有差异，如 46 条）。
+
+详细说明：[TEST_REPORT.md（中文）](TEST_REPORT.md) ·
+[English](../en-US/TEST_REPORT.md)。
+
+> 有一条单元测试会故意让 `onChange` 抛错；库会打印
+> `[Theme] Callback error`，用例仍应通过。
 
 ---
 
 ## 📋 变更日志
 
-**[1.0.0]** - 2026-02-20
+**[1.0.1]** - 2026-03-24
 
-- **新增**：首个稳定版。主题模式（light / dark / system）、策略（class /
-  attribute / media）、localStorage 与 Cookie 存储、完整 API
-  与配置、CustomEvent、TypeScript 类型。完整历史见
-  [CHANGELOG.md](CHANGELOG.md)。
+- **新增**：`mediaSyncAttribute`（`strategy: "media"` 时在根节点同步解析后的
+  light/dark，默认 `data-applied-theme`，`""` 关闭）。
+- **变更**：Cookie 值写入/读取 URL 编解码；系统偏好共用
+  `MediaQueryList`；`onChange` 快照遍历；临时禁用过渡复用单个
+  `<style>`；`destroy()` 清理镜像属性与无过渡节点。
+- **修复**：Cookie 按分段解析，避免用 `storageKey` 拼正则。
+- **文档与测试**：Playwright 浏览器测试、中英文测试报告与 README
+  更新。完整历史见 [CHANGELOG.md](CHANGELOG.md) ·
+  [English](../en-US/CHANGELOG.md)。
 
 ---
 

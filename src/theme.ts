@@ -54,16 +54,26 @@ export class Theme implements ThemeInstance {
   /** 自定义过渡 CSS 样式元素 */
   private transitionStyleElement: HTMLStyleElement | null = null;
 
+  /** 临时禁用全局过渡时复用的 style，避免快速连点堆积多个节点 */
+  private noTransitionStyleElement: HTMLStyleElement | null = null;
+
+  /** 与 noTransitionStyleElement 配套的清除定时器 */
+  private noTransitionClearTimer: ReturnType<typeof setTimeout> | null = null;
+
   /**
    * 创建主题实例
    *
    * @param options - 配置选项
    */
   constructor(options: ThemeOptions = {}) {
+    const strategy = options.strategy ?? "class";
+    /** media 策略默认向根节点同步解析后的亮/暗；显式 `mediaSyncAttribute: ""` 可关闭 */
+    const defaultMediaSync = strategy === "media" ? "data-applied-theme" : "";
+
     // 合并默认配置
     this.options = {
       defaultMode: options.defaultMode ?? "system",
-      strategy: options.strategy ?? "class",
+      strategy,
       darkClass: options.darkClass ?? "dark",
       lightClass: options.lightClass ?? "",
       attribute: options.attribute ?? "data-theme",
@@ -75,7 +85,21 @@ export class Theme implements ThemeInstance {
       transitionDuration: options.transitionDuration ?? 200,
       transitionCSS: options.transitionCSS ?? "",
       persistTransitionCSS: options.persistTransitionCSS ?? false,
+      mediaSyncAttribute: options.mediaSyncAttribute !== undefined
+        ? options.mediaSyncAttribute
+        : defaultMediaSync,
     };
+
+    /**
+     * 浏览器内提前创建 prefers-color-scheme 的 MediaQueryList，供 loadMode/resolveTheme
+     * 与系统偏好监听共用，避免多次 matchMedia 与不一致的查询对象。
+     */
+    if (
+      typeof globalThis.document !== "undefined" &&
+      typeof globalThis.matchMedia !== "undefined"
+    ) {
+      this.mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
+    }
 
     // 初始化主题
     this.mode = this.loadMode();
@@ -163,6 +187,9 @@ export class Theme implements ThemeInstance {
    * 获取系统偏好主题
    */
   getSystemPreference(): "light" | "dark" {
+    if (this.mediaQuery) {
+      return this.mediaQuery.matches ? "dark" : "light";
+    }
     if (typeof globalThis.matchMedia !== "undefined") {
       return globalThis.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
@@ -184,6 +211,10 @@ export class Theme implements ThemeInstance {
 
     // 清理回调
     this.callbacks.clear();
+
+    // 依赖缓存元素与 head 的副作用须在清缓存前处理
+    this.clearNoTransitionStyle();
+    this.removeMediaMirrorFromDom();
 
     // 清理 DOM 缓存
     this.cachedElement = null;
@@ -345,7 +376,21 @@ export class Theme implements ThemeInstance {
     } else if (this.options.strategy === "attribute") {
       this.applyAttributeStrategy(element);
     }
-    // media 策略不需要手动应用，由 CSS 处理
+    // media 策略：视觉由 CSS（prefers-color-scheme）处理；可选在根节点同步 data-* 供脚本读取
+    this.syncMediaMirrorAttribute(element);
+  }
+
+  /**
+   * media 策略下在根节点写入解析后的 light/dark；非 media 策略不写、不删，避免误清页面上的同名属性。
+   *
+   * @param element - selector 对应根节点
+   */
+  private syncMediaMirrorAttribute(element: Element): void {
+    const key = this.options.mediaSyncAttribute;
+    if (!key) return;
+    if (this.options.strategy === "media") {
+      element.setAttribute(key, this.appliedTheme);
+    }
   }
 
   /**
@@ -379,36 +424,72 @@ export class Theme implements ThemeInstance {
   }
 
   /**
-   * 临时禁用过渡动画
-   * 注意：当前实现使用全局 CSS 禁用所有过渡，element 参数预留供未来扩展
+   * 临时禁用过渡动画（复用单个 style 节点，避免极快连续切换时 head 内堆积多个标签）
+   * 注意：使用全局 CSS 禁用所有过渡；element 参数预留供未来扩展
    *
    * @param _element - 目标元素（当前未使用，预留参数）
    */
   private disableTransitionTemporarily(_element: HTMLElement): void {
-    // 添加无过渡样式
-    const css = globalThis.document?.createElement("style");
-    if (!css) return;
+    const doc = globalThis.document;
+    if (!doc) return;
 
-    css.textContent = `
+    // 新一轮切换：取消上一轮的清除定时器，避免旧定时器清空新注入的样式
+    if (this.noTransitionClearTimer !== null) {
+      clearTimeout(this.noTransitionClearTimer);
+      this.noTransitionClearTimer = null;
+    }
+
+    if (!this.noTransitionStyleElement) {
+      const el = doc.createElement("style");
+      el.setAttribute("data-theme-no-transition", "true");
+      doc.head?.appendChild(el);
+      this.noTransitionStyleElement = el;
+    }
+
+    this.noTransitionStyleElement.textContent = `
       *, *::before, *::after {
         transition-duration: 0s !important;
       }
     `;
-    globalThis.document?.head?.appendChild(css);
 
-    // 延迟后移除
-    setTimeout(() => {
-      css.remove();
+    this.noTransitionClearTimer = setTimeout(() => {
+      if (this.noTransitionStyleElement) {
+        this.noTransitionStyleElement.textContent = "";
+      }
+      this.noTransitionClearTimer = null;
     }, this.options.transitionDuration);
+  }
+
+  /**
+   * 移除临时无过渡 style 并清理定时器（destroy 或完全重置时用）
+   */
+  private clearNoTransitionStyle(): void {
+    if (this.noTransitionClearTimer !== null) {
+      clearTimeout(this.noTransitionClearTimer);
+      this.noTransitionClearTimer = null;
+    }
+    if (this.noTransitionStyleElement) {
+      this.noTransitionStyleElement.remove();
+      this.noTransitionStyleElement = null;
+    }
+  }
+
+  /**
+   * 销毁时移除 media 策略写入的根节点镜像属性（仅本策略且配置了属性名时）
+   */
+  private removeMediaMirrorFromDom(): void {
+    const key = this.options.mediaSyncAttribute;
+    if (!key || this.options.strategy !== "media") return;
+    const el = this.getElement();
+    if (el) el.removeAttribute(key);
   }
 
   /**
    * 设置系统偏好监听器
    */
   private setupSystemPreferenceListener(): void {
-    if (typeof globalThis.matchMedia === "undefined") return;
+    if (!this.mediaQuery) return;
 
-    this.mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
     this.mediaQueryHandler = (_e: MediaQueryListEvent) => {
       // 仅当模式为 system 时响应
       if (this.mode === "system") {
@@ -435,8 +516,9 @@ export class Theme implements ThemeInstance {
     previousTheme: "light" | "dark",
     previousMode: ThemeMode,
   ): void {
-    // 触发回调
-    for (const callback of this.callbacks) {
+    // 快照避免回调内 onChange/unsubscribe 修改 Set 导致迭代异常
+    const callbacks = [...this.callbacks];
+    for (const callback of callbacks) {
       try {
         callback(this.appliedTheme, this.mode);
       } catch (error) {
@@ -459,21 +541,28 @@ export class Theme implements ThemeInstance {
   }
 
   /**
-   * 获取 Cookie 值
+   * 读取 Cookie：按 `; ` 分段解析（避免 storageKey 含特殊字符时误匹配），值做 decodeURIComponent（与 setCookie 对称）。
    *
    * @param name - Cookie 名称
    * @returns Cookie 值
    */
   private getCookie(name: string): string | null {
     if (typeof globalThis.document === "undefined") return null;
-    const match = globalThis.document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)"),
-    );
-    return match ? match[2] : null;
+    const prefix = `${name}=`;
+    for (const segment of globalThis.document.cookie.split("; ")) {
+      if (!segment.startsWith(prefix)) continue;
+      const raw = segment.slice(prefix.length);
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return raw;
+      }
+    }
+    return null;
   }
 
   /**
-   * 设置 Cookie
+   * 设置 Cookie（值经 encodeURIComponent，与 getCookie 解码对称，避免将来值中含 `;` 等破坏分段）
    *
    * @param name - Cookie 名称
    * @param value - Cookie 值
@@ -482,8 +571,9 @@ export class Theme implements ThemeInstance {
   private setCookie(name: string, value: string, days: number): void {
     if (typeof globalThis.document === "undefined") return;
     const maxAge = days * 24 * 60 * 60;
+    const encoded = encodeURIComponent(value);
     globalThis.document.cookie =
-      `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
+      `${name}=${encoded};path=/;max-age=${maxAge};SameSite=Lax`;
   }
 }
 

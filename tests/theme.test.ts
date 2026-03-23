@@ -1,7 +1,7 @@
 /**
- * 主题库测试
+ * 主题库测试（Deno 无头单元测试）
  *
- * 测试主题切换功能
+ * 依赖真实 document / cookie / DOM 的用例见 `tests/browser/theme-browser.test.ts`（Playwright）。
  */
 
 import { afterEach, describe, expect, it } from "@dreamer/test";

@@ -2,12 +2,24 @@
 
 ## Overview
 
-| Item             | Info                        |
-| ---------------- | --------------------------- |
-| Package version  | 1.0.0-beta.3                |
-| Test framework   | @dreamer/test@1.0.0-beta.40 |
-| Test date        | 2026-02-01                  |
-| Test environment | Deno                        |
+| Item             | Info                                                                  |
+| ---------------- | --------------------------------------------------------------------- |
+| Package version  | 1.0.1                                                                 |
+| Test framework   | @dreamer/test@1.0.15                                                  |
+| Test date        | 2026-03-22                                                            |
+| Test environment | Deno 2.x + Chromium (Playwright) for browser tests; Bun 1.3+ optional |
+
+## How to run
+
+| Command                        | Scope                                                         |
+| ------------------------------ | ------------------------------------------------------------- |
+| `deno test -A tests/`          | **Full suite** (unit + browser), recommended                  |
+| `deno task test:browser`       | Browser tests only (`tests/browser/`)                         |
+| `bun test tests/`              | Unit + browser when dependencies resolve (see `package.json`) |
+| `bun test tests/theme.test.ts` | Unit tests only, no Playwright                                |
+
+Browser tests require a working Chromium install (e.g.
+`npx playwright install chromium`).
 
 ## Test Results
 
@@ -15,210 +27,172 @@
 
 | Metric      | Value |
 | ----------- | ----- |
-| Total tests | 36    |
-| Passed      | 36    |
+| Total tests | 47    |
+| Passed      | 47    |
 | Failed      | 0     |
 | Pass rate   | 100%  |
-| Duration    | 14ms  |
+| Duration    | ~9s   |
 
-### Test Files
+_Last measured with `deno test -A tests/` (includes browser startup)._
 
-| Test file     | Tests | Passed | Failed | Status |
-| ------------- | ----- | ------ | ------ | ------ |
-| theme.test.ts | 36    | 36     | 0      | ✅     |
+### Test files
 
-## Functional Test Details
+| Test file                             | Tests | Passed | Failed | Status |
+| ------------------------------------- | ----- | ------ | ------ | ------ |
+| `tests/theme.test.ts`                 | 37    | 37     | 0      | ✅     |
+| `tests/browser/theme-browser.test.ts` | 10    | 10     | 0      | ✅     |
 
-### 1. Theme class (theme.test.ts) – 6 tests
+The browser file registers **8** scenario tests plus **suite lifecycle** steps
+(e.g. `beforeAll` / `afterAll`) as counted tests under `@dreamer/test`, for
+**10** total in Deno.
 
-| Scenario                                   | Status |
-| ------------------------------------------ | ------ |
-| Should create instance with default config | ✅     |
-| Should create instance with custom config  | ✅     |
-| Should toggle theme correctly              | ✅     |
-| Should set theme mode correctly            | ✅     |
-| Should support change callback             | ✅     |
-| Should get system preference correctly     | ✅     |
+## Functional details
 
-### 2. createTheme function (theme.test.ts) – 1 test
+### 1. Theme class (`theme.test.ts`) – 6 tests
 
-| Scenario                         | Status |
-| -------------------------------- | ------ |
-| Should create new theme instance | ✅     |
+| Scenario                            | Status |
+| ----------------------------------- | ------ |
+| Create instance with default config | ✅     |
+| Create instance with custom config  | ✅     |
+| Toggle theme correctly              | ✅     |
+| Set theme mode correctly            | ✅     |
+| Support change callback             | ✅     |
+| Get system preference correctly     | ✅     |
 
-### 3. getTheme function (theme.test.ts) – 1 test
-
-| Scenario                       | Status |
-| ------------------------------ | ------ |
-| Should return global singleton | ✅     |
-
-### 4. Strategy config (theme.test.ts) – 2 tests
-
-| Scenario                         | Status |
-| -------------------------------- | ------ |
-| class strategy should be default | ✅     |
-| attribute strategy should work   | ✅     |
-
-### 5. Storage config (theme.test.ts) – 2 tests
-
-| Scenario                               | Status |
-| -------------------------------------- | ------ |
-| localStorage should be default storage | ✅     |
-| cookie storage should be configurable  | ✅     |
-
-### 6. Event dispatch (theme.test.ts) – 1 test
-
-| Scenario                           | Status |
-| ---------------------------------- | ------ |
-| Should dispatch theme change event | ✅     |
-
-### 7. destroy method (theme.test.ts) – 1 test
+### 2. `createTheme` (`theme.test.ts`) – 1 test
 
 | Scenario                  | Status |
 | ------------------------- | ------ |
-| Should clean up resources | ✅     |
+| Create new theme instance | ✅     |
 
-### 8. Global functions (theme.test.ts) – 5 tests
+### 3. `getTheme` (`theme.test.ts`) – 1 test
 
-| Scenario                                    | Status |
-| ------------------------------------------- | ------ |
-| toggleTheme should toggle theme             | ✅     |
-| setThemeMode should set mode                | ✅     |
-| getAppliedTheme should return current theme | ✅     |
-| getThemeMode should return current mode     | ✅     |
-| destroyTheme should destroy global instance | ✅     |
+| Scenario                | Status |
+| ----------------------- | ------ |
+| Return global singleton | ✅     |
 
-### 9. Config options (theme.test.ts) – 6 tests
+### 4. Strategy config (`theme.test.ts`) – 2 tests
 
-| Scenario                                  | Status |
-| ----------------------------------------- | ------ |
-| darkClass should be configurable          | ✅     |
-| lightClass should be configurable         | ✅     |
-| selector should be configurable           | ✅     |
-| disableTransition should be configurable  | ✅     |
-| transitionDuration should be configurable | ✅     |
-| storageKey should be configurable         | ✅     |
+| Scenario                  | Status |
+| ------------------------- | ------ |
+| class strategy is default | ✅     |
+| attribute strategy works  | ✅     |
 
-### 10. Edge cases (theme.test.ts) – 5 tests
+### 5. Storage config (`theme.test.ts`) – 2 tests
 
-| Scenario                                         | Status |
-| ------------------------------------------------ | ------ |
-| Same theme set should not trigger callback       | ✅     |
-| Multiple callbacks should all be invoked         | ✅     |
-| Callback error should not affect other callbacks | ✅     |
-| Empty config should use defaults                 | ✅     |
-| media strategy should be configurable            | ✅     |
+| Scenario                        | Status |
+| ------------------------------- | ------ |
+| localStorage is default storage | ✅     |
+| Cookie storage is configurable  | ✅     |
 
-### 11. Custom transition CSS (theme.test.ts) – 4 tests
+### 6. Event dispatch (`theme.test.ts`) – 1 test
 
-| Scenario                                                | Status |
-| ------------------------------------------------------- | ------ |
-| transitionCSS should be configurable                    | ✅     |
-| persistTransitionCSS should be configurable             | ✅     |
-| Temporary transition CSS should be removed after toggle | ✅     |
-| Persistent transition CSS should be removed on destroy  | ✅     |
+| Scenario                    | Status |
+| --------------------------- | ------ |
+| Dispatch theme change event | ✅     |
 
-### 12. DOM cache (theme.test.ts) – 2 tests
+### 7. `destroy` (`theme.test.ts`) – 1 test
 
-| Scenario                              | Status |
-| ------------------------------------- | ------ |
-| Should cache DOM element correctly    | ✅     |
-| Cache should be cleared after destroy | ✅     |
+| Scenario           | Status |
+| ------------------ | ------ |
+| Clean up resources | ✅     |
 
-## Coverage Analysis
+### 8. Global helpers (`theme.test.ts`) – 5 tests
 
-### Core types
+| Scenario                        | Status |
+| ------------------------------- | ------ |
+| `toggleTheme` toggles theme     | ✅     |
+| `setThemeMode` sets mode        | ✅     |
+| `getAppliedTheme` returns theme | ✅     |
+| `getThemeMode` returns mode     | ✅     |
+| `destroyTheme` destroys global  | ✅     |
 
-| Class/function  | Coverage |
-| --------------- | -------- |
-| Theme class     | ✅       |
-| createTheme     | ✅       |
-| getTheme        | ✅       |
-| toggleTheme     | ✅       |
-| setThemeMode    | ✅       |
-| getAppliedTheme | ✅       |
-| getThemeMode    | ✅       |
-| destroyTheme    | ✅       |
+### 9. Config options (`theme.test.ts`) – 6 tests
 
-### Methods
+| Scenario                          | Status |
+| --------------------------------- | ------ |
+| `darkClass` configurable          | ✅     |
+| `lightClass` configurable         | ✅     |
+| `selector` configurable           | ✅     |
+| `disableTransition` configurable  | ✅     |
+| `transitionDuration` configurable | ✅     |
+| `storageKey` configurable         | ✅     |
 
-| Method                | Coverage |
-| --------------------- | -------- |
-| getMode()             | ✅       |
-| getAppliedTheme()     | ✅       |
-| setMode()             | ✅       |
-| toggle()              | ✅       |
-| onChange()            | ✅       |
-| getSystemPreference() | ✅       |
-| destroy()             | ✅       |
+### 10. Edge cases (`theme.test.ts`) – 5 tests
 
-### Strategies
+| Scenario                                 | Status |
+| ---------------------------------------- | ------ |
+| Same theme set does not trigger callback | ✅     |
+| Multiple callbacks all invoked           | ✅     |
+| Callback error does not affect others    | ✅     |
+| Empty config uses defaults               | ✅     |
+| media strategy configurable              | ✅     |
 
-| Strategy  | Coverage |
-| --------- | -------- |
-| class     | ✅       |
-| attribute | ✅       |
-| media     | ✅       |
+### 11. Custom transition CSS (`theme.test.ts`) – 4 tests
 
-### Storage
+| Scenario                                      | Status |
+| --------------------------------------------- | ------ |
+| `transitionCSS` configurable                  | ✅     |
+| `persistTransitionCSS` configurable           | ✅     |
+| Temporary transition CSS removed after toggle | ✅     |
+| Persistent transition CSS removed on destroy  | ✅     |
 
-| Storage type | Coverage |
-| ------------ | -------- |
-| localStorage | ✅       |
-| cookie       | ✅       |
+### 12. DOM cache (`theme.test.ts`) – 2 tests
 
-### Config options
+| Scenario                    | Status |
+| --------------------------- | ------ |
+| Cache DOM element correctly | ✅     |
+| Cache cleared after destroy | ✅     |
 
-| Option               | Coverage |
-| -------------------- | -------- |
-| defaultMode          | ✅       |
-| strategy             | ✅       |
-| darkClass            | ✅       |
-| lightClass           | ✅       |
-| attribute            | ✅       |
-| selector             | ✅       |
-| storageKey           | ✅       |
-| storageType          | ✅       |
-| cookieExpireDays     | ✅       |
-| disableTransition    | ✅       |
-| transitionDuration   | ✅       |
-| transitionCSS        | ✅       |
-| persistTransitionCSS | ✅       |
+### 13. Browser tests (`tests/browser/theme-browser.test.ts`) – 8 scenarios
 
-### Edge cases
+Runs in real Chromium via `@dreamer/test` + local HTTP origin for cookie APIs
+(file:// cookies are unreliable).
 
-| Case                        | Coverage |
-| --------------------------- | -------- |
-| Default config              | ✅       |
-| Custom config               | ✅       |
-| Empty config                | ✅       |
-| Multiple toggles            | ✅       |
-| Same theme set              | ✅       |
-| Callback unsubscribe        | ✅       |
-| Multiple callbacks          | ✅       |
-| Callback error handling     | ✅       |
-| Global singleton            | ✅       |
-| Global destroy and recreate | ✅       |
+| Scenario                                                                           | Status |
+| ---------------------------------------------------------------------------------- | ------ |
+| `setCookie` encodes values (`encodeURIComponent`; semicolons safe)                 | ✅     |
+| `getCookie` decodes persisted mode                                                 | ✅     |
+| Invalid stored mode falls back to `defaultMode`                                    | ✅     |
+| `strategy: "media"` sets default `data-applied-theme`; removed on destroy          | ✅     |
+| `mediaSyncAttribute: ""` skips DOM mirror                                          | ✅     |
+| Custom `mediaSyncAttribute` name                                                   | ✅     |
+| `strategy: "class"` does not set `data-applied-theme`                              | ✅     |
+| Rapid toggles reuse a single `style[data-theme-no-transition]`; cleanup on destroy | ✅     |
 
-## Strengths
+## Coverage analysis
 
-1. **Lightweight**: Focused on dark mode switching with no extra code.
-2. **Framework support**: Works with TailwindCSS and UnoCSS.
-3. **Flexible strategies**: class, attribute, and media.
-4. **Flexible storage**: localStorage and cookie.
-5. **System preference**: Detects and follows system dark mode.
-6. **Event-driven**: Callbacks and CustomEvent.
-7. **Resilient**: Callback errors do not affect other callbacks.
-8. **Typed**: Full TypeScript types.
-9. **Custom transition**: Custom transition CSS, temporary or persistent.
-10. **Performance**: DOM query caching to avoid repeated lookups.
+### Core API
+
+| Export            | Coverage |
+| ----------------- | -------- |
+| `Theme`           | ✅       |
+| `createTheme`     | ✅       |
+| `getTheme`        | ✅       |
+| `toggleTheme`     | ✅       |
+| `setThemeMode`    | ✅       |
+| `getAppliedTheme` | ✅       |
+| `getThemeMode`    | ✅       |
+| `destroyTheme`    | ✅       |
+
+### Options (high level)
+
+| Area                                      | Coverage     |
+| ----------------------------------------- | ------------ |
+| Strategies (class / attribute / media)    | ✅           |
+| `mediaSyncAttribute` (media + DOM mirror) | ✅ (browser) |
+| Storage (localStorage / cookie)           | ✅           |
+| Cookie encode/decode symmetry             | ✅ (browser) |
+| Transition / `disableTransition`          | ✅           |
+| DOM cache / destroy cleanup               | ✅           |
 
 ## Conclusion
 
-All 36 tests for @dreamer/theme pass. Coverage includes public API, config
-options, strategies, storage, custom transition, DOM cache, and edge cases. The
-package is minimal and focused on dark mode switching for TailwindCSS and
-UnoCSS, with flexible options and a clear API.
+All **47** tests pass under `deno test -A tests/`. Unit tests cover the public
+API and typical Deno/Bun runtimes; browser tests cover real `document.cookie`,
+`data-*` mirroring for `media` strategy, and transition style node reuse. The
+package remains focused on TailwindCSS / UnoCSS dark mode with typed options and
+flexible storage.
 
 ---
 
