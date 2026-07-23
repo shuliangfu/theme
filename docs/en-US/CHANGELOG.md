@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] - 2026-07-23
+
+### Added
+
+- **Node.js 22+ compatibility** — Full three-runtime support (Deno, Bun,
+  Node.js). Unit tests pass on all three runtimes (Deno 37 / Bun 36 / Node 36).
+- **CI** — 9-job matrix (Deno/Bun/Node × Linux/macOS/Windows); unit tests run on
+  every push/PR to `dev`. Browser (Playwright) tests stay local
+  (`deno task test:browser`) and are excluded from CI.
+- **Tooling** — Added `tsconfig.json`, `package.json` (with `test:node` script
+  `tsx --test --test-force-exit`, `engines.node >= 22`), `.npmrc`
+  (`@jsr:registry=https://npm.jsr.io`), and `minimumDependencyAge`.
+
+### Changed
+
+- **`notifyChange` event dispatch guard** (`src/theme.ts`) — The CustomEvent
+  dispatch now also checks `typeof globalThis.dispatchEvent === "function"`.
+  Node's `globalThis` is not an `EventTarget` (unlike Deno/Bun), so the global
+  event dispatch is gracefully skipped in Node; `onChange` callbacks still fire.
+- **Test environment** (`tests/theme.test.ts`) — Added a Node `EventTarget`
+  polyfill that installs `addEventListener`/`removeEventListener`/`dispatchEvent`
+  on `globalThis` when missing (Deno/Bun already provide them, so it self-skips).
+- **`package.json` runtime dependencies** — Removed the unused
+  `@dreamer/esbuild` and `@dreamer/runtime-adapter` entries. `src/` is zero-dependency
+  (pure guarded browser globals); those packages are only used by the Deno browser
+  test, which resolves them via the `deno.json` `jsr:` import map. This keeps
+  `npm install`/`bun install` fast and avoids the esbuild binary postinstall.
+- **Dependency upgrades** — `@dreamer/runtime-adapter` ^1.2.2 (in `deno.json`),
+  `@dreamer/test` ^1.2.3.
+
+### Compatibility
+
+- Deno 2.9+
+- Bun 1.3+
+- Node.js 22+ (since v1.1.0)
+- Browsers (primary target)
+
+---
+
 ## [1.0.1] - 2026-03-24
 
 ### Added

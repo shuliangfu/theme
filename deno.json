@@ -1,6 +1,6 @@
 {
   "name": "@dreamer/theme",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "exports": {
     ".": "./src/mod.ts"
   },
@@ -13,17 +13,19 @@
     ]
   },
   "tasks": {
-    "test": "deno test --allow-all tests/",
+    "test": "deno test --allow-all tests/theme.test.ts",
     "test:browser": "deno test --allow-all tests/browser/",
+    "test:node": "tsx --tsconfig tsconfig.json --test --test-force-exit tests/theme.test.ts",
     "check": "deno check src/mod.ts",
     "publish": "deno publish"
   },
   "imports": {
     "@dreamer/esbuild": "jsr:@dreamer/esbuild@^1.1.6",
-    "@dreamer/runtime-adapter": "jsr:@dreamer/runtime-adapter@^1.0.18",
-    "@dreamer/test": "jsr:@dreamer/test@^1.0.15"
+    "@dreamer/runtime-adapter": "jsr:@dreamer/runtime-adapter@^1.2.2",
+    "@dreamer/test": "jsr:@dreamer/test@^1.2.3"
   },
   "nodeModulesDir": "auto",
+  "minimumDependencyAge": 0,
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,

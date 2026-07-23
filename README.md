@@ -7,7 +7,7 @@ Lightweight theme switching for TailwindCSS and UnoCSS.
 
 [![JSR](https://jsr.io/badges/@dreamer/theme)](https://jsr.io/@dreamer/theme)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-47%20passed-green)](./docs/en-US/TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-36%20passed%20(3%20runtimes)-green)](./docs/en-US/TEST_REPORT.md)
 
 ---
 
@@ -26,7 +26,13 @@ UnoCSS class and attribute strategies.
 deno add jsr:@dreamer/theme
 ```
 
-**npm**
+**Bun**
+
+```bash
+bunx jsr add @dreamer/theme
+```
+
+**Node.js 22+**
 
 ```bash
 npx jsr add @dreamer/theme
@@ -36,12 +42,17 @@ npx jsr add @dreamer/theme
 
 ## Environment support
 
-| Environment | Supported | Notes                       |
-| ----------- | --------- | --------------------------- |
-| Deno        | ✅        | Full support                |
-| Bun         | ✅        | Full support                |
-| Node.js     | ✅        | Via JSR compatibility layer |
-| Browser     | ✅        | Primary target              |
+| Environment | Supported | Notes                                            |
+| ----------- | --------- | ------------------------------------------------ |
+| Deno        | ✅        | Full support                                     |
+| Bun         | ✅        | Full support                                     |
+| Node.js     | ✅        | Node.js 22+ (since v1.1.0; headless, no DOM)     |
+| Browser     | ✅        | Primary target (DOM / localStorage / cookie)     |
+
+> In Node.js there is no `document`/`window`, so DOM side effects are skipped;
+> theme logic (mode resolution, callbacks, storage fallback) still works.
+> Global `CustomEvent` dispatch is skipped when `globalThis` is not an
+> `EventTarget` (Node), while `onChange` callbacks always fire.
 
 ---
 
@@ -305,20 +316,20 @@ import type {
 
 ## Test report
 
-| Metric      | Value                      |
-| ----------- | -------------------------- |
-| Test date   | 2026-03-22                 |
-| Total tests | 47 (`deno test -A tests/`) |
-| Passed      | 47                         |
-| Failed      | 0                          |
-| Pass rate   | 100%                       |
+| Metric      | Value                              |
+| ----------- | ---------------------------------- |
+| Test date   | 2026-07-23                         |
+| Deno        | 37 passed (incl. cleanup hook)     |
+| Bun         | 36 passed                          |
+| Node.js 22+ | 36 passed                          |
+| Failed      | 0                                  |
+| Pass rate   | 100%                               |
 
-- **Full suite (Deno)**: `deno test -A tests/` — 37 unit
-  (`tests/theme.test.ts`) + 10 browser file registrations
-  (`tests/browser/theme-browser.test.ts`, real Chromium).
-- **Browser only**: `deno task test:browser`.
-- **Bun**: `bun test tests/` (see `package.json`; may report 46 cases depending
-  on how hooks are counted).
+- **CI (3 runtimes)**: `tests/theme.test.ts` runs on Deno / Bun / Node.js across
+  Linux/macOS/Windows (9-job matrix).
+- **Node.js**: `npm run test:node` (`tsx --test --test-force-exit`).
+- **Browser only (local)**: `deno task test:browser` — Playwright Chromium,
+  `tests/browser/theme-browser.test.ts` (10 registrations), excluded from CI.
 
 Details: [TEST_REPORT (EN)](docs/en-US/TEST_REPORT.md) ·
 [测试报告 (中文)](docs/zh-CN/TEST_REPORT.md).
@@ -329,6 +340,18 @@ Details: [TEST_REPORT (EN)](docs/en-US/TEST_REPORT.md) ·
 ---
 
 ## Changelog
+
+**[1.1.0]** - 2026-07-23
+
+- **Added**: Node.js 22+ compatibility — three-runtime support (Deno/Bun/Node),
+  9-job CI matrix, `test:node` script, `tsconfig.json`, `.npmrc`.
+- **Changed**: `notifyChange` now also guards `globalThis.dispatchEvent` (Node's
+  `globalThis` is not an `EventTarget`); test adds a Node `EventTarget` polyfill.
+  Removed unused `@dreamer/esbuild`/`@dreamer/runtime-adapter` from
+  `package.json` (`src/` is zero-dependency; browser test resolves them via
+  `deno.json`). Upgraded `@dreamer/runtime-adapter` ^1.2.2, `@dreamer/test` ^1.2.3.
+- Full history: [docs/en-US/CHANGELOG.md](docs/en-US/CHANGELOG.md) ·
+  [docs/zh-CN/CHANGELOG.md](docs/zh-CN/CHANGELOG.md).
 
 **[1.0.1]** - 2026-03-24
 

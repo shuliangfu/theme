@@ -17,6 +17,21 @@ import {
   toggleTheme,
 } from "../src/mod.ts";
 
+/**
+ * Node.js 兼容：Node 的 globalThis 不是 EventTarget（无 addEventListener/dispatchEvent），
+ * 而 Deno/Bun 的 globalThis 是 EventTarget。事件派发用例需要全局事件目标，故在 Node 下
+ * 用 Node 内置 EventTarget 补齐全局方法；Deno/Bun 已原生具备，polyfill 自跳过。
+ */
+if (
+  typeof globalThis.addEventListener !== "function" &&
+  typeof EventTarget !== "undefined"
+) {
+  const target = new EventTarget();
+  globalThis.addEventListener = target.addEventListener.bind(target);
+  globalThis.removeEventListener = target.removeEventListener.bind(target);
+  globalThis.dispatchEvent = target.dispatchEvent.bind(target);
+}
+
 describe("Theme 主题库", () => {
   // 每个测试后清理
   afterEach(() => {

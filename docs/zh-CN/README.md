@@ -7,7 +7,7 @@
 
 [![JSR](https://jsr.io/badges/@dreamer/theme)](https://jsr.io/@dreamer/theme)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../../LICENSE)
-[![Tests](https://img.shields.io/badge/tests-47%20passed-green)](./TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-36%20passed%20(3%20runtimes)-green)](./TEST_REPORT.md)
 
 ---
 
@@ -26,7 +26,13 @@ UnoCSS 的 class 策略和 attribute 策略。
 deno add jsr:@dreamer/theme
 ```
 
-**npm**
+**Bun**
+
+```bash
+bunx jsr add @dreamer/theme
+```
+
+**Node.js 22+**
 
 ```bash
 npx jsr add @dreamer/theme
@@ -36,12 +42,16 @@ npx jsr add @dreamer/theme
 
 ## 🌍 环境兼容性
 
-| 环境    | 支持 | 说明            |
-| ------- | ---- | --------------- |
-| Deno    | ✅   | 完全支持        |
-| Bun     | ✅   | 完全支持        |
-| Node.js | ✅   | 通过 JSR 兼容层 |
-| 浏览器  | ✅   | 主要运行环境    |
+| 环境    | 支持 | 说明                                                  |
+| ------- | ---- | ----------------------------------------------------- |
+| Deno    | ✅   | 完全支持                                              |
+| Bun     | ✅   | 完全支持                                              |
+| Node.js | ✅   | Node.js 22+（自 v1.1.0 起；无头环境，无 DOM）         |
+| 浏览器  | ✅   | 主要运行环境（DOM / localStorage / cookie）          |
+
+> Node.js 下无 `document`/`window`，DOM 副作用被跳过；主题逻辑（模式解析、
+> 回调、存储回退）仍正常工作。当 `globalThis` 不是 `EventTarget`（Node）时，
+> 全局 `CustomEvent` 派发被跳过，而 `onChange` 回调始终触发。
 
 ---
 
@@ -309,20 +319,20 @@ import type {
 
 ## 📊 测试报告
 
-| 指标     | 数值                        |
-| -------- | --------------------------- |
-| 测试时间 | 2026-03-22                  |
-| 总测试数 | 47（`deno test -A tests/`） |
-| 通过     | 47                          |
-| 失败     | 0                           |
-| 通过率   | 100%                        |
+| 指标       | 数值                       |
+| ---------- | -------------------------- |
+| 测试时间   | 2026-07-23                 |
+| Deno       | 37 通过（含清理钩子）      |
+| Bun        | 36 通过                    |
+| Node.js 22+ | 36 通过                   |
+| 失败       | 0                          |
+| 通过率     | 100%                       |
 
-- **完整套件（Deno）**：`deno test -A tests/` — 37
-  条单元（`tests/theme.test.ts`）+ 浏览器文件内 10
-  条注册（`tests/browser/theme-browser.test.ts`，真实 Chromium）。
-- **仅浏览器**：`deno task test:browser`。
-- **Bun**：`bun test tests/`（见
-  `package.json`；不同运行器对钩子计数可能略有差异，如 46 条）。
+- **CI（三端）**：`tests/theme.test.ts` 在 Deno / Bun / Node.js 三端、
+  Linux/macOS/Windows 三平台运行（9 作业矩阵）。
+- **Node.js**：`npm run test:node`（`tsx --test --test-force-exit`）。
+- **仅浏览器（本地）**：`deno task test:browser` — Playwright Chromium，
+  `tests/browser/theme-browser.test.ts`（10 条注册），不进入 CI。
 
 详细说明：[TEST_REPORT.md（中文）](TEST_REPORT.md) ·
 [English](../en-US/TEST_REPORT.md)。
@@ -333,6 +343,18 @@ import type {
 ---
 
 ## 📋 变更日志
+
+**[1.1.0]** - 2026-07-23
+
+- **新增**：Node.js 22+ 兼容 — 三端运行时支持（Deno/Bun/Node）、9 作业 CI 矩阵、
+  `test:node` 脚本、`tsconfig.json`、`.npmrc`。
+- **变更**：`notifyChange` 同时守卫 `globalThis.dispatchEvent`（Node 的
+  `globalThis` 非 `EventTarget`）；测试新增 Node `EventTarget` polyfill。从
+  `package.json` 移除未使用的 `@dreamer/esbuild`/`@dreamer/runtime-adapter`
+  （`src/` 零依赖；浏览器测试经 `deno.json` 解析）。升级
+  `@dreamer/runtime-adapter` ^1.2.2、`@dreamer/test` ^1.2.3。
+- 完整历史见 [CHANGELOG.md](CHANGELOG.md) ·
+  [English](../en-US/CHANGELOG.md)。
 
 **[1.0.1]** - 2026-03-24
 

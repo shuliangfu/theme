@@ -526,8 +526,11 @@ export class Theme implements ThemeInstance {
       }
     }
 
-    // 派发自定义事件
-    if (typeof globalThis.CustomEvent !== "undefined") {
+    // 派发自定义事件（仅当运行时提供全局事件目标时；Node 的 globalThis 非 EventTarget，跳过）
+    if (
+      typeof globalThis.CustomEvent !== "undefined" &&
+      typeof globalThis.dispatchEvent === "function"
+    ) {
       const detail: ThemeChangeEventDetail = {
         theme: this.appliedTheme,
         mode: this.mode,

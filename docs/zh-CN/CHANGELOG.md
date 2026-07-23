@@ -7,6 +7,44 @@
 
 ---
 
+## [1.1.0] - 2026-07-23
+
+### 新增
+
+- **Node.js 22+ 兼容**：全面支持三端运行时（Deno、Bun、Node.js）。单元测试
+  在三端均通过（Deno 37 / Bun 36 / Node 36）。
+- **CI**：9 作业矩阵（Deno/Bun/Node × Linux/macOS/Windows），每次向 `dev`
+  分支 push/PR 时运行单元测试。浏览器（Playwright）测试保持本地运行
+  （`deno task test:browser`），不进入 CI。
+- **工具链**：新增 `tsconfig.json`、`package.json`（含 `test:node` 脚本
+  `tsx --test --test-force-exit`、`engines.node >= 22`）、`.npmrc`
+  （`@jsr:registry=https://npm.jsr.io`）与 `minimumDependencyAge`。
+
+### 变更
+
+- **`notifyChange` 事件派发守卫**（`src/theme.ts`）：CustomEvent 派发现在同时
+  检查 `typeof globalThis.dispatchEvent === "function"`。Node 的 `globalThis`
+  不是 `EventTarget`（与 Deno/Bun 不同），故在 Node 下全局事件派发被优雅跳过；
+  `onChange` 回调照常触发。
+- **测试环境**（`tests/theme.test.ts`）：新增 Node `EventTarget` polyfill，在
+  `globalThis` 缺少 `addEventListener`/`removeEventListener`/`dispatchEvent`
+  时补齐（Deno/Bun 已原生具备，polyfill 自跳过）。
+- **`package.json` 运行时依赖**：移除未使用的 `@dreamer/esbuild` 与
+  `@dreamer/runtime-adapter`。`src/` 零依赖（纯守卫的浏览器全局 API）；这两个包
+  仅 Deno 浏览器测试使用，经 `deno.json` 的 `jsr:` import map 解析。这样
+  `npm install`/`bun install` 更快，且避开 esbuild 二进制 postinstall。
+- **依赖升级**：`@dreamer/runtime-adapter` ^1.2.2（`deno.json`）、
+  `@dreamer/test` ^1.2.3。
+
+### 兼容性
+
+- Deno 2.9+
+- Bun 1.3+
+- Node.js 22+（自 v1.1.0 起）
+- 浏览器（主要运行环境）
+
+---
+
 ## [1.0.1] - 2026-03-24
 
 ### 新增

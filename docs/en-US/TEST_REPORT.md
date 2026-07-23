@@ -4,43 +4,45 @@
 
 | Item             | Info                                                                  |
 | ---------------- | --------------------------------------------------------------------- |
-| Package version  | 1.0.1                                                                 |
-| Test framework   | @dreamer/test@1.0.15                                                  |
-| Test date        | 2026-03-22                                                            |
-| Test environment | Deno 2.x + Chromium (Playwright) for browser tests; Bun 1.3+ optional |
+| Package version  | 1.1.0                                                                 |
+| Test framework   | @dreamer/test@^1.2.3                                                  |
+| Test date        | 2026-07-23                                                            |
+| Test environment | Deno 2.9+, Bun 1.3+, Node.js 22+ (Linux/macOS/Windows); Chromium (Playwright) for browser tests |
 
 ## How to run
 
-| Command                        | Scope                                                         |
-| ------------------------------ | ------------------------------------------------------------- |
-| `deno test -A tests/`          | **Full suite** (unit + browser), recommended                  |
-| `deno task test:browser`       | Browser tests only (`tests/browser/`)                         |
-| `bun test tests/`              | Unit + browser when dependencies resolve (see `package.json`) |
-| `bun test tests/theme.test.ts` | Unit tests only, no Playwright                                |
+| Command                              | Scope                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| `deno test -A tests/theme.test.ts`   | **Unit tests** (CI, all three runtimes use this file)                  |
+| `deno task test:browser`             | Browser tests only (`tests/browser/`, Playwright Chromium)             |
+| `deno test -A tests/`                | Full suite (unit + browser), Deno only                                 |
+| `bun test tests/theme.test.ts`       | Unit tests under Bun                                                   |
+| `npm run test:node`                  | Unit tests under Node.js (`tsx --test --test-force-exit`)              |
 
-Browser tests require a working Chromium install (e.g.
-`npx playwright install chromium`).
+> **CI vs local**: CI runs `tests/theme.test.ts` (unit) across Deno/Bun/Node.
+> Browser tests (`tests/browser/`) require Chromium and run locally via
+> `deno task test:browser`; they are excluded from CI.
 
 ## Test Results
 
 ### Summary
 
-| Metric      | Value |
-| ----------- | ----- |
-| Total tests | 47    |
-| Passed      | 47    |
-| Failed      | 0     |
-| Pass rate   | 100%  |
-| Duration    | ~9s   |
+| Runtime  | Total tests | Passed | Failed | Pass rate |
+| -------- | ----------- | ------ | ------ | --------- |
+| **Deno** | 37          | 37 ✅  | 0      | 100%      |
+| **Bun**  | 36          | 36 ✅  | 0      | 100%      |
+| **Node** | 36          | 36 ✅  | 0      | 100%      |
 
-_Last measured with `deno test -A tests/` (includes browser startup)._
+- **Execution time**: ~7ms (Deno), ~31ms (Bun), ~163ms (Node).
+- Deno reports one extra count: `@dreamer/test cleanup browsers` lifecycle step
+  (browser cleanup hook). Bun/Node count only the 36 `it()` cases.
 
 ### Test files
 
-| Test file                             | Tests | Passed | Failed | Status |
-| ------------------------------------- | ----- | ------ | ------ | ------ |
-| `tests/theme.test.ts`                 | 37    | 37     | 0      | ✅     |
-| `tests/browser/theme-browser.test.ts` | 10    | 10     | 0      | ✅     |
+| Test file                             | Tests | CI? | Status |
+| ------------------------------------- | ----- | --- | ------ |
+| `tests/theme.test.ts`                 | 36    | ✅  | ✅     |
+| `tests/browser/theme-browser.test.ts` | 10    | ❌ (local) | ✅ |
 
 The browser file registers **8** scenario tests plus **suite lifecycle** steps
 (e.g. `beforeAll` / `afterAll`) as counted tests under `@dreamer/test`, for
@@ -188,11 +190,12 @@ Runs in real Chromium via `@dreamer/test` + local HTTP origin for cookie APIs
 
 ## Conclusion
 
-All **47** tests pass under `deno test -A tests/`. Unit tests cover the public
-API and typical Deno/Bun runtimes; browser tests cover real `document.cookie`,
-`data-*` mirroring for `media` strategy, and transition style node reuse. The
-package remains focused on TailwindCSS / UnoCSS dark mode with typed options and
-flexible storage.
+All **36** unit tests pass across Deno, Bun, and Node.js (Deno reports 37
+including its `cleanup browsers` lifecycle hook). Unit tests cover the public
+API across all three runtimes; browser tests (local, Playwright) cover real
+`document.cookie`, `data-*` mirroring for `media` strategy, and transition
+style node reuse. The package remains focused on TailwindCSS / UnoCSS dark mode
+with typed options and flexible storage.
 
 ---
 

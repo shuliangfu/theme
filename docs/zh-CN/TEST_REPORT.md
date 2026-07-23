@@ -2,44 +2,47 @@
 
 ## 测试概览
 
-| 项目     | 信息                                                           |
-| -------- | -------------------------------------------------------------- |
-| 包版本   | 1.0.1                                                          |
-| 测试框架 | @dreamer/test@1.0.15                                           |
-| 测试时间 | 2026-03-22                                                     |
-| 测试环境 | Deno 2.x；浏览器用例使用 Chromium（Playwright）；可选 Bun 1.3+ |
+| 项目     | 信息                                                                  |
+| -------- | --------------------------------------------------------------------- |
+| 包版本   | 1.1.0                                                                 |
+| 测试框架 | @dreamer/test@^1.2.3                                                  |
+| 测试时间 | 2026-07-23                                                            |
+| 测试环境 | Deno 2.9+、Bun 1.3+、Node.js 22+（Linux/macOS/Windows）；浏览器用例使用 Chromium（Playwright） |
 
 ## 如何运行
 
-| 命令                           | 说明                                          |
-| ------------------------------ | --------------------------------------------- |
-| `deno test -A tests/`          | **推荐**：单元测试 + 浏览器测试完整套件       |
-| `deno task test:browser`       | 仅 `tests/browser/` 浏览器测试                |
-| `bun test tests/`              | 单元 + 浏览器（需 `package.json` 中依赖齐全） |
-| `bun test tests/theme.test.ts` | 仅单元测试，不启动 Playwright                 |
+| 命令                                  | 说明                                                       |
+| ------------------------------------- | ---------------------------------------------------------- |
+| `deno test -A tests/theme.test.ts`    | **单元测试**（CI，三端均使用此文件）                       |
+| `deno task test:browser`              | 仅浏览器测试（`tests/browser/`，Playwright Chromium）      |
+| `deno test -A tests/`                 | 完整套件（单元 + 浏览器），仅 Deno                         |
+| `bun test tests/theme.test.ts`        | Bun 下单元测试                                             |
+| `npm run test:node`                   | Node.js 下单元测试（`tsx --test --test-force-exit`）       |
 
-浏览器测试需本机已安装 Chromium（例如 `npx playwright install chromium`）。
+> **CI 与本地**：CI 在 Deno/Bun/Node 三端运行 `tests/theme.test.ts`（单元）。
+> 浏览器测试（`tests/browser/`）需 Chromium，通过 `deno task test:browser`
+> 本地运行，不进入 CI。
 
 ## 测试结果
 
 ### 总体统计
 
-| 指标     | 数值  |
-| -------- | ----- |
-| 总测试数 | 47    |
-| 通过     | 47    |
-| 失败     | 0     |
-| 通过率   | 100%  |
-| 执行时间 | 约 9s |
+| 运行时   | 测试总数 | 通过    | 失败 | 通过率 |
+| -------- | -------- | ------- | ---- | ------ |
+| **Deno** | 37       | 37 ✅   | 0    | 100%   |
+| **Bun**  | 36       | 36 ✅   | 0    | 100%   |
+| **Node** | 36       | 36 ✅   | 0    | 100%   |
 
-_以 `deno test -A tests/` 为准（含浏览器启动）。_
+- **执行时间**：约 7ms（Deno）、约 31ms（Bun）、约 163ms（Node）。
+- Deno 多计 1 条：`@dreamer/test cleanup browsers` 生命周期步骤（浏览器清理钩子）。
+  Bun/Node 仅计 36 条 `it()` 用例。
 
 ### 测试文件统计
 
-| 测试文件                              | 测试数 | 通过 | 失败 | 状态 |
-| ------------------------------------- | ------ | ---- | ---- | ---- |
-| `tests/theme.test.ts`                 | 37     | 37   | 0    | ✅   |
-| `tests/browser/theme-browser.test.ts` | 10     | 10   | 0    | ✅   |
+| 测试文件                              | 测试数 | CI? | 状态 |
+| ------------------------------------- | ------ | --- | ---- |
+| `tests/theme.test.ts`                 | 36     | ✅  | ✅   |
+| `tests/browser/theme-browser.test.ts` | 10     | ❌（本地） | ✅ |
 
 浏览器文件中包含 **8** 条场景用例，以及 `@dreamer/test` 计为测试的
 **套件生命周期**（如 `beforeAll` / `afterAll`），在 Deno 下合计 **10** 条。
@@ -171,10 +174,10 @@ _以 `deno test -A tests/` 为准（含浏览器启动）。_
 
 ## 结论
 
-在 `deno test -A tests/` 下 **47** 条测试全部通过。单元测试覆盖 Deno/Bun
-常见无头环境；浏览器测试覆盖真实 Cookie、`media` 策略下的 `data-*`
-同步，以及无过渡 style 单节点复用。包仍聚焦于 TailwindCSS / UnoCSS
-暗黑模式场景，API 与类型完整。
+在 Deno、Bun、Node.js 三端 **36** 条单元测试全部通过（Deno 计 37 条，含
+`cleanup browsers` 生命周期钩子）。单元测试覆盖三端公开 API；浏览器测试（本地、
+Playwright）覆盖真实 Cookie、`media` 策略下的 `data-*` 同步，以及无过渡
+style 单节点复用。包仍聚焦于 TailwindCSS / UnoCSS 暗黑模式场景，API 与类型完整。
 
 ---
 
